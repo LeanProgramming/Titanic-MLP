@@ -9,10 +9,11 @@ class TitanicDataset(Dataset):
     Clase personalizada para cargar, limpiar y normalizar el dataset del Titanic
     utilizando operaciones nativas de PyTorch y transformaciones con Pandas.
     """
-    def __init__(self, csv_file, target_type='survived', mean=None, std=None):
+    def __init__(self, csv_file, target_type='survived', balance=False, mean=None, std=None):
         # 1. Leer el archivo CSV local y guardarlo en un DataFrame de Pandas
         self.df = pd.read_csv(csv_file)
         self.target_type = target_type
+        self.balance = balance
         
         # 2. Ejecutar la limpieza y transformación de texto a números
         self._preprocess()
@@ -61,6 +62,23 @@ class TitanicDataset(Dataset):
         # Convertir género a formato binario (0 y 1)
         self.df['Sex'] = self.df['Sex'].map({'male': 0, 'female': 1})
         
+        #Aplicar técnica de balanceo
+        if self.balance and self.target_type == 'survived':
+            df_class_0 = self.df[self.df['Survived'] == 0]
+            df_class_1 = self.df[self.df['Survived'] == 1]
+            
+            #Contar instancias
+            count_0 = len(df_class_0)
+            count_1 = len(df_class_1)
+            
+            if count_1 < count_0:
+                #Duplicamos aleatoriamente muestras de la clase 1 (Oversampling)
+                df_class_1_over = df_class_1.sample(count_0, replace=True, random_state=42)
+                self.df = pd.concat([df_class_0,df_class_1_over],axis=0).reset_index(drop=True)
+            elif count_0 < count_1:
+                df_class_0_over = df_class_0.sample(count_1, replace=True, random_state=42)
+                self.df = pd.concat([df_class_1, df_class_0_over], axis=0).reset_index(drop=True)
+            
         # Adaptar la estructura de datos según lo que queramos predecir
         if self.target_type == 'survived':
             # Si el objetivo es 'Survived', el puerto 'Embarked' se vuelve características One-Hot (0 o 1)

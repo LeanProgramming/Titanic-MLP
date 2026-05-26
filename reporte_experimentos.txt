@@ -1,0 +1,22 @@
+=========================================================================
+         REPORTE AUTOMÁTICO DE MÉTRICAS PARA EL INFORME ACADÉMICO        
+=========================================================================
+
+📌 Experimento 1:
+  • Configuración de RNA: 1 Capa Oculta (8 neuronas), Activación Sigmoide, SIN Balanceo, SIN Dropout
+  • Tiempo total de cómputo: 1.1792 segundos
+  • Pérdida de Entrenamiento Final (Loss): 0.4367
+  • Precisión Final en Validación (Accuracy): 77.53%
+-------------------------------------------------------------------------
+📌 Experimento 2:
+  • Configuración de RNA: 2 Capas Ocultas (32->16), Activación ReLU, SIN Balanceo, CON Dropout (0.2)
+  • Tiempo total de cómputo: 2.2538 segundos
+  • Pérdida de Entrenamiento Final (Loss): 0.3647
+  • Precisión Final en Validación (Accuracy): 78.65%
+-------------------------------------------------------------------------
+📌 Experimento 3:
+  • Configuración de RNA: 3 Capas Ocultas (64->32->16), Activación LeakyReLU, CON Balanceo (Oversampling), CON Dropout (0.1)
+  • Tiempo total de cómputo: 3.9535 segundos
+  • Pérdida de Entrenamiento Final (Loss): 0.3666
+  • Precisión Final en Validación (Accuracy): 80.37%
+-------------------------------------------------------------------------

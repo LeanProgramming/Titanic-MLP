@@ -1,5 +1,6 @@
-# src/trainer.py
 import torch
+import os
+import time
 
 class Trainer:
     """
@@ -7,6 +8,7 @@ class Trainer:
     registrando las métricas históricas para su posterior graficación.
     """
     def __init__(self, model, train_loader, val_loader, optimizer, strategy, device='cpu'):
+        #Enviar el modelo al dispositivo activo (CPU o GPU) desde la inicialización
         self.model = model.to(device)
         self.train_loader = train_loader
         self.val_loader = val_loader
@@ -77,22 +79,50 @@ class Trainer:
                 
         return running_loss / total, correct / total
 
-    def fit(self, epochs):
-        """Bucle principal que ejecuta las épocas solicitadas y guarda el historial."""
-        print(f"Iniciando el entrenamiento por {epochs} épocas...")
+    def fit(self, epochs, checkpoint_interval=5, experiment_name="exp"):
+        """
+        Bucle principal que ejecuta las épocas solicitadas, audita el tiempo de cómputo,
+        almacena historiales y congela estados intermedios (checkpoints) en intervalos fijos.
+        """
+        # Creamos la carpeta de checkpoints requerida por la consigna si no existe en la raíz
+        os.makedirs('checkpoints', exist_ok=True)
+        
+        # Registramos la marca de tiempo exacta de inicio del experimento en segundos
+        start_time = time.time()
+        
+        print(f"Iniciando ciclo de optimización para '{experiment_name}' por {epochs} épocas...")
+        
         for epoch in range(1, epochs + 1):
+            # Invocamos de forma secuencial la fase de entrenamiento y validación por época
             train_loss, train_acc = self.train_epoch()
             val_loss, val_acc = self.evaluate()
             
-            # Guardar los resultados en el historial para los gráficos de curvas de aprendizaje
+            # Guardar los resultados en el historial interno para los gráficos de curvas de aprendizaje
             self.history['train_loss'].append(train_loss)
-            self.history['train_acc'].append(train_acc)
+            self.history['train_acc'].append(train_acc * 100) # Convertido a base 100% para consistencia gráfica
             self.history['val_loss'].append(val_loss)
-            self.history['val_acc'].append(val_acc)
+            self.history['val_acc'].append(val_acc * 100)     # Convertido a base 100% para consistencia gráfica
             
-            # Imprimir el progreso en consola cada 5 épocas
-            if epoch % 5 == 0 or epoch == 1:
-                print(f"Época {epoch:02d}/{epochs} -> "
+            # Imprimir el progreso analítico en consola cada 5 épocas o en extremos extremos
+            if epoch % 5 == 0 or epoch == 1 or epoch == epochs:
+                print(f"  Época {epoch:02d}/{epochs} -> "
                       f"Train Loss: {train_loss:.4f} | Train Acc: {train_acc*100:.2f}% || "
                       f"Val Loss: {val_loss:.4f} | Val Acc: {val_acc*100:.2f}%")
-        return self.history
+            
+            # --- ALMACENAMIENTO PERIÓDICO DE ESTADOS (Intervalo requerido en la consigna) ---
+            if epoch % checkpoint_interval == 0:
+                # Diseñamos un nombre dinámico único usando el experimento y la iteración actual
+                checkpoint_filename = f"checkpoint_{experiment_name}_epoch_{epoch}.pth"
+                checkpoint_path = os.path.join('checkpoints', checkpoint_filename)
+                
+                # Guardamos el diccionario de pesos actual de la red neuronal en disco
+                torch.save(self.model.state_dict(), checkpoint_path)
+                
+        # Detenemos el cronómetro al finalizar la última época de entrenamiento
+        end_time = time.time()
+        elapsed_time = end_time - start_time
+        
+        print(f"⏱ [CRONÓMETRO] Entrenamiento de '{experiment_name}' completado en {elapsed_time:.2f} segundos.")
+        
+        # Devolvemos tanto el diccionario histórico de métricas como el tiempo exacto transcurrido
+        return self.history, elapsed_time
